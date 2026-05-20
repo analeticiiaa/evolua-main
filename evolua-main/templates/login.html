@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Evolua - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="logo">e</div>
+
+    <div class="logo-direita">evolua</div>
+
+
+
+   <!--INCLUIR NO FUTURO-->
+   <!-- <nav class="menu">
+        <a href="#">Principal</a>
+        <a href="#">Serviços</a>
+        <a href="#">Sobre</a>
+        <a href="#">Entrar</a>
+    </nav> -->
+
+    <div class="login-container">
+        <h2>Bem-vindo de volta!</h2>
+
+        <form onsubmit="fazerLogin(event)">
+    <input type="email" id="input-email" placeholder="Email">
+    <input type="password" id="input-senha" placeholder="Senha">
+    <p class="forgot-text"><a href="/esqueci-senha">Esqueci minha senha</a></p>
+    <button type="submit">Entrar</button>
+</form>
+
+<p class="register-text">
+    Não possui conta? <a href="/cadastro"><span>Registrar</span></a>
+</p>
+
+<script>
+    async function fazerLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('input-email').value.trim();
+        const senha = document.getElementById('input-senha').value.trim();
+
+        if (!email || !senha) return;
+
+        const resp = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, senha })
+        });
+
+        const dados = await resp.json();
+
+        if (resp.ok) {
+            location.href = '/dashboard';
+        } else {
+            alert(dados.erro);
+        }
+    }
+</script>
+    </div>
+
+</body>
+</html>

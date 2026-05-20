@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Evolua - Redefinir senha</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="logo">e</div>
+    <div class="logo-direita">evolua</div>
+
+    <div class="login-container">
+        <h2>Nova senha</h2>
+        <p class="esqueci-desc">Digite sua nova senha abaixo.</p>
+
+        <form onsubmit="redefinirSenha(event)">
+            <input type="password" id="input-senha" placeholder="Nova senha...">
+            <input type="password" id="input-confirmar" placeholder="Confirmar senha...">
+            <button type="submit">Salvar nova senha</button>
+        </form>
+
+        <p class="register-text" style="margin-top:20px;">
+            Lembrou a senha? <a href="/"><span>Entrar</span></a>
+        </p>
+    </div>
+
+    <script>
+        async function redefinirSenha(e) {
+            e.preventDefault();
+            const senha = document.getElementById('input-senha').value.trim();
+            const confirmar = document.getElementById('input-confirmar').value.trim();
+
+            if (!senha) return;
+
+            if (senha !== confirmar) {
+                alert('As senhas não coincidem!');
+                return;
+            }
+
+            const resp = await fetch('/api/redefinir-senha', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    token: '{{ token }}',
+                    senha
+                })
+            });
+
+            const dados = await resp.json();
+
+            if (resp.ok) {
+                alert('Senha redefinida com sucesso!');
+                location.href = '/';
+            } else {
+                alert(dados.erro);
+            }
+        }
+    </script>
+</body>
+</html>

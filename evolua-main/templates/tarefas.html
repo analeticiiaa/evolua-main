@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block titulo %}Tarefas - Evolua{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tarefas.css') }}">{% endblock %}
+{% block classe_main %}tarefas-main{% endblock %}
+
+{% block conteudo %}
+
+    <!-- HEADER TAREFAS -->
+    <div class="tarefas-header">
+        <span>Tarefas</span>
+        <button class="btn-nova-tarefa" onclick="abrirModal()">
+            <i data-lucide="plus"></i>
+        </button>
+    </div>
+
+    <!-- COLUNAS -->
+    <div class="tarefas-colunas">
+        <div class="coluna">
+            <div class="coluna-titulo">Todas</div>
+            <ul class="lista-tarefas" id="lista-todas"></ul>
+        </div>
+
+        <!-- COLUNA A FAZER -->
+        <div class="coluna">
+            <div class="coluna-titulo" onclick="toggleDropdown(event)" style="cursor:pointer; position:relative;">
+                <span id="titulo-filtro">A fazer</span>
+                <i id="icone-seta" data-lucide="chevron-down" style="width:16px;height:16px;transition:0.2s; margin-left: auto;"></i>
+
+                <!-- DROPDOWN -->
+                <div class="dropdown-filtro" id="dropdown-filtro" style="display:none;">
+                    <div class="dropdown-item" id="opcao-pendentes" onclick="selecionarFiltro('pendentes', event)">
+                        <i data-lucide="dot"></i> A fazer
+                    </div>
+                    <div class="dropdown-item" id="opcao-concluidas" onclick="selecionarFiltro('concluidas', event)">
+                        <i data-lucide="dot"></i> Concluídas
+                    </div>
+                </div>
+            </div>
+            <ul class="lista-tarefas" id="lista-afazer"></ul>
+        </div>
+    </div>
+
+    <!-- MODAL NOVA TAREFA -->
+    <div class="modal-overlay" id="modal" style="display:none">
+        <div class="modal">
+            <h3>Nova tarefa</h3>
+            <input type="text" id="input-tarefa" placeholder="Nome da tarefa...">
+            <div class="modal-botoes">
+                <button onclick="fecharModal()">Cancelar</button>
+                <button class="btn-confirmar" onclick="adicionarTarefa()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let tarefas = [];
+    let filtroAfazer = 'pendentes';
+
+    async function carregar() {
+        const resp = await fetch('/api/tarefas');
+        tarefas = await resp.json();
+        renderizar();
+    }
+
+    function renderizar() {
+        const listaTodas = document.getElementById('lista-todas');
+        const listaAfazer = document.getElementById('lista-afazer');
+        listaTodas.innerHTML = '';
+        listaAfazer.innerHTML = '';
+
+        if (tarefas.length === 0) {
+            listaTodas.innerHTML = '<p class="vazio">Nenhuma tarefa.</p>';
+            listaAfazer.innerHTML = '<p class="vazio">Nenhuma tarefa.</p>';
+            return;
+        }
+
+        tarefas.forEach((tarefa, index) => {
+            const liTodas = criarItemTarefa(tarefa, index);
+            listaTodas.appendChild(liTodas);
+
+            const mostrar = filtroAfazer === 'pendentes' ? !tarefa.concluida : tarefa.concluida;
+            if (mostrar) {
+                const liAfazer = criarItemTarefa(tarefa, index);
+                listaAfazer.appendChild(liAfazer);
+            }
+        });
+
+        if (listaAfazer.innerHTML === '') {
+            listaAfazer.innerHTML = '<p class="vazio">Nenhuma tarefa aqui.</p>';
+        }
+
+        lucide.createIcons();
+    }
+
+    function criarItemTarefa(tarefa, index) {
+        const li = document.createElement('li');
+        li.className = 'tarefa-item' + (tarefa.concluida ? ' concluida' : '');
+        li.innerHTML = `
+            <input type="checkbox" ${tarefa.concluida ? 'checked' : ''}
+                onchange="toggleTarefa(${index})">
+            <span>${tarefa.nome}</span>
+            <button class="btn-excluir" onclick="excluirTarefa(${index})">
+                <i data-lucide="trash-2"></i>
+            </button>
+        `;
+        return li;
+    }
+
+    async function toggleTarefa(index) {
+        if (!tarefas[index].concluida) {
+            await fetch(`/api/tarefas/${index}/concluir`, { method: 'PUT' });
+        }
+        carregar();
+    }
+
+    async function excluirTarefa(index) {
+        await fetch(`/api/tarefas/${index}`, { method: 'DELETE' });
+        carregar();
+    }
+
+    function abrirModal() {
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('input-tarefa').focus();
+    }
+
+    function fecharModal() {
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('input-tarefa').value = '';
+    }
+
+    async function adicionarTarefa() {
+        const input = document.getElementById('input-tarefa');
+        const nome = input.value.trim();
+        if (!nome) return;
+
+        await fetch('/api/tarefas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome })
+        });
+
+        fecharModal();
+        carregar();
+    }
+
+    function toggleDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('dropdown-filtro');
+        const seta = document.getElementById('icone-seta');
+        const aberto = dropdown.style.display === 'block';
+        dropdown.style.display = aberto ? 'none' : 'block';
+        seta.style.transform = aberto ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    function selecionarFiltro(tipo, event) {
+        event.stopPropagation();
+        filtroAfazer = tipo;
+        document.getElementById('titulo-filtro').textContent = tipo === 'pendentes' ? 'A fazer' : 'Concluídas';
+        document.getElementById('dropdown-filtro').style.display = 'none';
+        document.getElementById('icone-seta').style.transform = 'rotate(0deg)';
+        document.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('selecionado'));
+        document.getElementById('opcao-' + tipo).classList.add('selecionado');
+        renderizar();
+    }
+
+    document.addEventListener('click', function() {
+        document.getElementById('dropdown-filtro').style.display = 'none';
+        document.getElementById('icone-seta').style.transform = 'rotate(0deg)';
+    });
+
+    document.getElementById('input-tarefa').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') adicionarTarefa();
+    });
+
+    carregar();
+</script>
+{% endblock %}

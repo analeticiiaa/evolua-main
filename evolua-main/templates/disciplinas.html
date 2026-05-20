@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block titulo %}Disciplinas - Evolua{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{{ url_for('static', filename='css/disciplinas.css') }}">{% endblock %}
+{% block classe_main %}disciplinas-main{% endblock %}
+
+{% block conteudo %}
+
+    <!-- HEADER -->
+    <div class="disciplinas-header">
+        <span>Disciplinas</span>
+        <button class="btn-nova-disciplina" onclick="abrirModal()">
+            <i data-lucide="plus"></i>
+        </button>
+    </div>
+
+    <!-- GRID DE DISCIPLINAS -->
+    <div class="disciplinas-conteudo">
+        <div class="disciplinas-grid" id="disciplinas-grid"></div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal" style="display:none">
+        <div class="modal">
+            <h3 id="modal-titulo">Nova disciplina</h3>
+
+            <div class="campo">
+                <label>Nome</label>
+                <input type="text" id="input-disciplina" placeholder="Nome da disciplina...">
+            </div>
+
+            <div class="campo">
+                <label>Cor</label>
+                <div class="cores-opcoes" id="cores-opcoes">
+                    <div class="cor-opcao" style="background:#093952" data-cor="#093952" onclick="selecionarCor('#093952', this)"></div>
+                    <div class="cor-opcao" style="background:#2E86AB" data-cor="#2E86AB" onclick="selecionarCor('#2E86AB', this)"></div>
+                    <div class="cor-opcao" style="background:#4CAF82" data-cor="#4CAF82" onclick="selecionarCor('#4CAF82', this)"></div>
+                    <div class="cor-opcao" style="background:#E07A5F" data-cor="#E07A5F" onclick="selecionarCor('#E07A5F', this)"></div>
+                    <div class="cor-opcao" style="background:#F2CC8F" data-cor="#F2CC8F" onclick="selecionarCor('#F2CC8F', this)"></div>
+                    <div class="cor-opcao" style="background:#9B5DE5" data-cor="#9B5DE5" onclick="selecionarCor('#9B5DE5', this)"></div>
+                    <div class="cor-opcao" style="background:#F15BB5" data-cor="#F15BB5" onclick="selecionarCor('#F15BB5', this)"></div>
+                    <div class="cor-opcao" style="background:#6B7280" data-cor="#6B7280" onclick="selecionarCor('#6B7280', this)"></div>
+                </div>
+            </div>
+
+            <div class="modal-botoes">
+                <button onclick="fecharModal()">Cancelar</button>
+                <button class="btn-confirmar" onclick="salvarDisciplina()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let disciplinas = [];
+    let editandoIndex = null;
+    let corSelecionada = '#093952';
+
+    // CARREGAR DISCIPLINAS DO BACKEND
+    async function carregar() {
+        const resp = await fetch('/api/disciplinas');
+        disciplinas = await resp.json();
+        renderizar();
+    }
+
+    function selecionarCor(cor, el) {
+        corSelecionada = cor;
+        document.querySelectorAll('.cor-opcao').forEach(c => c.classList.remove('selecionada'));
+        el.classList.add('selecionada');
+    }
+
+    function renderizar() {
+        const grid = document.getElementById('disciplinas-grid');
+        grid.innerHTML = '';
+
+        if (disciplinas.length === 0) {
+            grid.innerHTML = '<p class="vazio">Nenhuma disciplina cadastrada.</p>';
+            return;
+        }
+
+        disciplinas.forEach((disciplina, index) => {
+            const cor = disciplina.cor || '#093952';
+            const card = document.createElement('div');
+            card.className = 'disciplina-card';
+            card.style.borderTop = `5px solid ${cor}`;
+            card.innerHTML = `
+                <div class="disciplina-cor-tag" style="background:${cor}"></div>
+                <div class="disciplina-nome">${disciplina.nome}</div>
+                <div class="disciplina-acoes">
+                    <button class="btn-editar" onclick="abrirEdicao(${index})">
+                        <i data-lucide="pencil"></i>
+                    </button>
+                    <button class="btn-excluir" onclick="excluirDisciplina('${disciplina.nome}')">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        lucide.createIcons();
+    }
+
+    function abrirModal() {
+        editandoIndex = null;
+        corSelecionada = '#093952';
+        document.getElementById('modal-titulo').textContent = 'Nova disciplina';
+        document.getElementById('input-disciplina').value = '';
+        document.querySelectorAll('.cor-opcao').forEach(c => c.classList.remove('selecionada'));
+        document.querySelector('.cor-opcao[data-cor="#093952"]').classList.add('selecionada');
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('input-disciplina').focus();
+    }
+
+    function abrirEdicao(index) {
+        editandoIndex = index;
+        corSelecionada = disciplinas[index].cor || '#093952';
+        document.getElementById('modal-titulo').textContent = 'Editar disciplina';
+        document.getElementById('input-disciplina').value = disciplinas[index].nome;
+        document.querySelectorAll('.cor-opcao').forEach(c => c.classList.remove('selecionada'));
+        const corEl = document.querySelector(`.cor-opcao[data-cor="${corSelecionada}"]`);
+        if (corEl) corEl.classList.add('selecionada');
+        document.getElementById('modal').style.display = 'flex';
+        document.getElementById('input-disciplina').focus();
+    }
+
+    function fecharModal() {
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('input-disciplina').value = '';
+        editandoIndex = null;
+    }
+
+    async function salvarDisciplina() {
+        const nome = document.getElementById('input-disciplina').value.trim();
+        if (!nome) return;
+
+        if (editandoIndex !== null) {
+            // EDITAR
+            await fetch('/api/disciplinas', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nome_atual: disciplinas[editandoIndex].nome,
+                    novo_nome: nome,
+                    nova_cor: corSelecionada
+                })
+            });
+        } else {
+            // CRIAR
+            await fetch('/api/disciplinas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, cor: corSelecionada })
+            });
+        }
+
+        fecharModal();
+        carregar();
+    }
+
+    async function excluirDisciplina(nome) {
+        await fetch(`/api/disciplinas/${encodeURIComponent(nome)}`, {
+            method: 'DELETE'
+        });
+        carregar();
+    }
+
+    document.getElementById('input-disciplina').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') salvarDisciplina();
+    });
+
+    carregar();
+</script>
+{% endblock %}

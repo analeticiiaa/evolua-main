@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block titulo %}Evolua{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    {% block estilos %}{% endblock %}
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="perfil">
+             <div class="avatar" id="avatar-sidebar">
+    <span class="avatar-inicial" id="avatar-inicial">{{ nome[0].upper() if nome else 'U' }}</span>
+    <img id="avatar-img" src="" style="display:none; width:100%; height:100%; border-radius:50%; object-fit:cover;">
+    <div class="avatar-overlay" onclick="toggleMenuFoto()">
+        <i data-lucide="camera"></i>
+    </div>
+</div>
+
+<!-- MENU DE FOTO -->
+<div class="avatar-menu" id="avatar-menu" style="display:none;">
+    <div class="avatar-menu-item" onclick="document.getElementById('input-foto').click()">
+        <i data-lucide="upload"></i> Trocar foto
+    </div>
+    <div class="avatar-menu-item avatar-menu-perigo" onclick="removerFoto()">
+        <i data-lucide="trash-2"></i> Remover foto
+    </div>
+</div>
+
+<input type="file" id="input-foto" accept="image/*" style="display:none" onchange="alterarFoto(event)">
+            <h3>{{ nome }}</h3>
+            <p>{{ session.get('email', '') }}</p>
+        </div>
+
+        <ul class="menu-lateral">
+            <li class="{{ 'ativo' if pagina_ativa == 'dashboard' }}" onclick="location.href='/dashboard'"><i data-lucide="home"></i> Início</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'tarefas' }}" onclick="location.href='/tarefas'"><i data-lucide="check-square"></i> Tarefas</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'disciplinas' }}" onclick="location.href='/disciplinas'"><i data-lucide="book"></i> Disciplinas</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'sessoes' }}" onclick="location.href='/sessoes'"><i data-lucide="clock"></i> Sessões</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'foco' }}" onclick="location.href='/foco'"><i data-lucide="target"></i> Modo foco</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'relatorio' }}" onclick="location.href='/relatorio'"><i data-lucide="bar-chart"></i> Relatório</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'calendario' }}" onclick="location.href='/calendario'"><i data-lucide="calendar"></i> Calendário</li>
+            <li class="{{ 'ativo' if pagina_ativa == 'configuracoes' }}" onclick="location.href='/configuracoes'"><i data-lucide="settings"></i> Configurações</li>
+        </ul>
+
+        <div class="logout" onclick="location.href='/'">
+            <i data-lucide="log-out"></i>
+            <span>Sair</span>
+        </div>
+    </div>
+    <input type="file" id="input-foto" accept="image/*" style="display:none" onchange="alterarFoto(event)">
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="main {% block classe_main %}{% endblock %}">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <h2>{% block topbar_titulo %}evolua{% endblock %}</h2>
+            <div class="pesquisa-wrapper">
+                <input type="text" id="input-pesquisa" placeholder="Pesquisar"
+                       oninput="pesquisar(this.value)" onblur="fecharPesquisa()">
+                <i data-lucide="search"></i>
+                <div class="pesquisa-dropdown" id="pesquisa-dropdown" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO DA TELA -->
+        {% block conteudo %}{% endblock %}
+
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    async function pesquisar(termo) {
+    const dropdown = document.getElementById('pesquisa-dropdown');
+    termo = termo.trim().toLowerCase();
+
+    if (!termo) {
+        dropdown.style.display = 'none';
+        return;
+    }
+
+    const [rTarefas, rDisciplinas, rSessoes, rEventos] = await Promise.all([
+        fetch('/api/tarefas'),
+        fetch('/api/disciplinas'),
+        fetch('/api/sessoes'),
+        fetch('/api/eventos')
+    ]);
+
+    const tarefas = await rTarefas.json();
+    const disciplinas = await rDisciplinas.json();
+    const sessoes = await rSessoes.json();
+    const eventos = await rEventos.json();
+
+    let resultados = [];
+
+    tarefas.forEach(t => {
+        if (t.nome.toLowerCase().includes(termo)) {
+            resultados.push({ tipo: 'Tarefa', texto: t.nome, icone: 'check-square', link: '/tarefas' });
+        }
+    });
+
+    disciplinas.forEach(d => {
+        if (d.nome.toLowerCase().includes(termo)) {
+            resultados.push({ tipo: 'Disciplina', texto: d.nome, icone: 'book', link: '/disciplinas', cor: d.cor });
+        }
+    });
+
+    sessoes.forEach(s => {
+        if (s.disciplina.toLowerCase().includes(termo)) {
+            const [ano, mes, dia] = s.data.split('-');
+            resultados.push({ tipo: 'Sessão', texto: `${s.disciplina} · ${dia}/${mes}/${ano}`, icone: 'clock', link: '/sessoes' });
+        }
+    });
+
+    Object.entries(eventos).forEach(([data, evs]) => {
+        evs.forEach(e => {
+            if (e.texto.toLowerCase().includes(termo)) {
+                const [ano, mes, dia] = data.split('-');
+                resultados.push({ tipo: 'Compromisso', texto: `${e.texto} · ${dia}/${mes}/${ano}`, icone: 'calendar', link: '/calendario' });
+            }
+        });
+    });
+
+    if (resultados.length === 0) {
+        dropdown.innerHTML = '<p class="pesquisa-vazio">Nenhum resultado encontrado.</p>';
+        dropdown.style.display = 'block';
+        return;
+    }
+
+    dropdown.innerHTML = resultados.map(r => `
+        <div class="pesquisa-item" onmousedown="location.href='${r.link}'">
+            <div class="pesquisa-item-icone" ${r.cor ? `style="color:${r.cor}"` : ''}>
+                <i data-lucide="${r.icone}"></i>
+            </div>
+            <div class="pesquisa-item-info">
+                <span class="pesquisa-item-tipo">${r.tipo}</span>
+                <span class="pesquisa-item-texto">${r.texto}</span>
+            </div>
+        </div>
+    `).join('');
+
+    dropdown.style.display = 'block';
+    lucide.createIcons();
+    }
+
+    function fecharPesquisa() {
+        setTimeout(() => {
+            document.getElementById('pesquisa-dropdown').style.display = 'none';
+        }, 200);
+    }
+
+    // FOTO DE PERFIL
+// FOTO DE PERFIL
+const fotoSalva = localStorage.getItem('foto_perfil');
+if (fotoSalva) {
+    document.getElementById('avatar-img').src = fotoSalva;
+    document.getElementById('avatar-img').style.display = 'block';
+    document.getElementById('avatar-inicial').style.display = 'none';
+}
+
+function toggleMenuFoto() {
+    const menu = document.getElementById('avatar-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function alterarFoto(event) {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const src = e.target.result;
+        localStorage.setItem('foto_perfil', src);
+        document.getElementById('avatar-img').src = src;
+        document.getElementById('avatar-img').style.display = 'block';
+        document.getElementById('avatar-inicial').style.display = 'none';
+        document.getElementById('avatar-menu').style.display = 'none';
+    };
+    reader.readAsDataURL(arquivo);
+}
+
+function removerFoto() {
+    localStorage.removeItem('foto_perfil');
+    document.getElementById('avatar-img').style.display = 'none';
+    document.getElementById('avatar-img').src = '';
+    document.getElementById('avatar-inicial').style.display = 'block';
+    document.getElementById('avatar-menu').style.display = 'none';
+}
+
+// Fechar menu ao clicar fora
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('avatar-menu');
+    if (!e.target.closest('.avatar') && !e.target.closest('.avatar-menu')) {
+        menu.style.display = 'none';
+    }
+});
+
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

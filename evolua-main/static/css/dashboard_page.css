@@ -1,0 +1,227 @@
+.dashboard-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dash-conteudo {
+    flex: 1;
+    padding: 16px 40px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.dash-secao-titulo {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+/* VISÃO GERAL */
+.visao-geral {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+
+.cards-resumo {
+    display: flex;
+    gap: 16px;
+}
+
+.card-resumo {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #f7f9fb;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.card-resumo i {
+    width: 28px;
+    height: 28px;
+    color: #093952;
+    flex-shrink: 0;
+}
+
+.card-resumo-valor {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.card-resumo-label {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #aaa;
+    font-family: 'League Spartan', sans-serif;
+}
+
+/* GRADE PRINCIPAL */
+.dash-grade {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 16px;
+}
+
+.dash-bloco {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    transition: 0.2s;
+}
+
+.dash-bloco:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* GRÁFICO — linha 1, coluna 1 */
+.bloco-grafico {
+     grid-column: 1 / 3;
+    grid-row: 1;
+}
+
+.grafico-wrapper {
+    height: 150px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+}
+
+/* TAREFAS — linhas 1 e 2, coluna 2 */
+.bloco-tarefas {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    min-height: 300px; /* ajuste esse valor */
+}
+
+/* LINHA DE BAIXO — coluna 1 dividida em 2 */
+.bloco-foco {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 190px; /* ajuste esse valor */
+}
+
+.bloco-calendario {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 180px; /* ajuste esse valor */
+}
+
+/* TAREFAS */
+.dash-tarefas-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dash-tarefa-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.dash-tarefa-item i {
+    width: 14px;
+    height: 14px;
+    color: #B6D5E4;
+    flex-shrink: 0;
+}
+
+/* MODO FOCO */
+.foco-icone {
+    width: 50px;
+    height: 50px;
+    background: #B6D5E4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.foco-icone i {
+    width: 26px;
+    height: 26px;
+    color: #093952;
+}
+
+/* MINI CALENDÁRIO */
+.mini-cal-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+    margin-bottom: 6px;
+}
+
+.mini-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+}
+
+.mini-cal-grid > span {
+    font-size: 11px;
+    color: #aaa;
+    font-family: 'League Spartan', sans-serif;
+    padding: 6px 3px;
+}
+
+.mini-dia {
+    position: relative;
+    font-size: 9px;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+    padding: 3px 2px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mini-hoje {
+    background: #093952;
+    color: white;
+    border-radius: 50%;
+}
+
+.mini-ponto {
+    width: 3px;
+    height: 3px;
+    background: #093952;
+    border-radius: 50%;
+    margin-top: 1px;
+}
+
+.mini-hoje .mini-ponto {
+    background: white;
+}
+
+.vazio {
+    color: #bbb;
+    font-style: italic;
+    font-size: 13px;
+}

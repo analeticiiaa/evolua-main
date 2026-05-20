@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block titulo %}Dashboard - Evolua{% endblock %}
+{% block topbar_titulo %}Bem-vinda, {{ nome }}!{% endblock %}
+{% block classe_main %}dashboard-main{% endblock %}
+{% block estilos %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard_page.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block conteudo %}
+
+    <div class="dash-conteudo">
+
+        <!-- VISÃO GERAL -->
+        <div class="visao-geral">
+            <p class="dash-secao-titulo">Visão geral</p>
+            <div class="cards-resumo">
+                <div class="card-resumo">
+                    <i data-lucide="clock"></i>
+                    <div>
+                        <p class="card-resumo-valor" id="tempo-hoje">0min</p>
+                        <p class="card-resumo-label">Hoje</p>
+                    </div>
+                </div>
+                <div class="card-resumo">
+                    <i data-lucide="calendar"></i>
+                    <div>
+                        <p class="card-resumo-valor" id="tempo-semana">0h</p>
+                        <p class="card-resumo-label">Semana</p>
+                    </div>
+                </div>
+                <div class="card-resumo">
+                    <i data-lucide="layers"></i>
+                    <div>
+                        <p class="card-resumo-valor" id="sessoes-hoje">0 sessões</p>
+                        <p class="card-resumo-label">Hoje</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRADE PRINCIPAL -->
+        <div class="dash-grade">
+
+            <!-- DISCIPLINA MAIS ESTUDADA -->
+            <div class="dash-bloco bloco-grafico">
+                <p class="dash-secao-titulo">Disciplina mais estudada</p>
+                <div class="grafico-wrapper">
+                    <canvas id="grafico-disciplinas"></canvas>
+                    <p class="vazio" id="vazio-grafico" style="display:none;">Nenhuma sessão registrada.</p>
+                </div>
+            </div>
+
+            <!-- TAREFAS — ocupa 2 linhas -->
+            <div class="dash-bloco bloco-tarefas" onclick="location.href='/tarefas'" style="cursor:pointer;">
+                <p class="dash-secao-titulo">Tarefas</p>
+                <ul class="dash-tarefas-lista" id="dash-tarefas"></ul>
+            </div>
+
+            <!-- MODO FOCO -->
+            <div class="dash-bloco bloco-foco" onclick="location.href='/foco'" style="cursor:pointer;">
+                <p class="dash-secao-titulo">Iniciar modo foco</p>
+                <div class="foco-icone">
+                    <i data-lucide="target"></i>
+                </div>
+            </div>
+
+            <!-- CALENDÁRIO -->
+            <div class="dash-bloco bloco-calendario" onclick="location.href='/calendario'" style="cursor:pointer;">
+                <p class="dash-secao-titulo">Calendário</p>
+                <div class="mini-calendario" id="mini-calendario"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+    let sessoes = [];
+    let tarefas = [];
+    let disciplinas = [];
+    let eventos = {};
+
+    const hoje = new Date();
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const ano = hoje.getFullYear();
+    const hojeStr = `${ano}-${mes}-${dia}`;
+
+    async function carregar() {
+        const [rSessoes, rTarefas, rDisciplinas, rEventos] = await Promise.all([
+            fetch('/api/sessoes'),
+            fetch('/api/tarefas'),
+            fetch('/api/disciplinas'),
+            fetch('/api/eventos')
+        ]);
+        sessoes = await rSessoes.json();
+        tarefas = await rTarefas.json();
+        disciplinas = await rDisciplinas.json();
+        eventos = await rEventos.json();
+
+        calcularResumo();
+        renderizarGrafico();
+        renderizarTarefas();
+        renderizarMiniCalendario();
+        lucide.createIcons();
+    }
+
+    function calcularResumo() {
+        const sessoesHoje = sessoes.filter(s => s.data === hojeStr);
+        const totalMinHoje = sessoesHoje.reduce((acc, s) => acc + s.horas * 60 + s.minutos, 0);
+        const hHoje = Math.floor(totalMinHoje / 60);
+        const mHoje = totalMinHoje % 60;
+        document.getElementById('tempo-hoje').textContent =
+            hHoje > 0 ? `${hHoje}h${mHoje > 0 ? mHoje+'min' : ''}` : `${mHoje}min`;
+
+        const inicioSemana = new Date(hoje);
+        inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+        inicioSemana.setHours(0,0,0,0);
+        const sessoesSemana = sessoes.filter(s => new Date(s.data + 'T00:00:00') >= inicioSemana);
+        const totalMinSemana = sessoesSemana.reduce((acc, s) => acc + s.horas * 60 + s.minutos, 0);
+        const hSemana = Math.floor(totalMinSemana / 60);
+        const mSemana = totalMinSemana % 60;
+        document.getElementById('tempo-semana').textContent =
+            hSemana > 0 ? `${hSemana}h${mSemana > 0 ? mSemana+'min' : ''}` : `${mSemana}min`;
+
+        document.getElementById('sessoes-hoje').textContent =
+            `${sessoesHoje.length} ${sessoesHoje.length === 1 ? 'sessão' : 'sessões'}`;
+    }
+
+    function renderizarGrafico() {
+        const mapa = {};
+        sessoes.forEach(s => {
+            if (!mapa[s.disciplina]) mapa[s.disciplina] = 0;
+            mapa[s.disciplina] += s.horas * 60 + s.minutos;
+        });
+
+        const labels = Object.keys(mapa);
+        const valores = Object.values(mapa).map(m => +(m / 60).toFixed(2));
+        const cores = labels.map(l => {
+            const disc = disciplinas.find(d => d.nome === l);
+            return disc ? disc.cor : '#093952';
+        });
+
+        if (labels.length === 0) {
+            document.getElementById('vazio-grafico').style.display = 'block';
+            return;
+        }
+
+        new Chart(document.getElementById('grafico-disciplinas').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: valores,
+                    backgroundColor: cores,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => `${v}h`, font: { family: 'League Spartan' } },
+                        grid: { color: '#eee' }
+                    },
+                    x: {
+                        ticks: { font: { family: 'League Spartan' } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderizarTarefas() {
+        const lista = document.getElementById('dash-tarefas');
+        const pendentes = tarefas.filter(t => !t.concluida).slice(0, 6);
+
+        if (pendentes.length === 0) {
+            lista.innerHTML = '<p class="vazio">Nenhuma tarefa pendente.</p>';
+            return;
+        }
+
+        pendentes.forEach(t => {
+            const li = document.createElement('li');
+            li.className = 'dash-tarefa-item';
+            li.innerHTML = `<i data-lucide="circle"></i> ${t.nome}`;
+            lista.appendChild(li);
+        });
+    }
+
+    function renderizarMiniCalendario() {
+        const mini = document.getElementById('mini-calendario');
+        const totalDias = new Date(ano, hoje.getMonth() + 1, 0).getDate();
+        const primeiroDia = new Date(ano, hoje.getMonth(), 1).getDay();
+
+        const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                       'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+        let html = `
+            <div class="mini-cal-titulo">${meses[hoje.getMonth()]} ${ano}</div>
+            <div class="mini-cal-grid">
+                <span>D</span><span>S</span><span>T</span>
+                <span>Q</span><span>Q</span><span>S</span><span>S</span>
+        `;
+
+        for (let i = 0; i < primeiroDia; i++) html += '<span></span>';
+
+        for (let d = 1; d <= totalDias; d++) {
+            const chave = `${ano}-${mes}-${String(d).padStart(2,'0')}`;
+            const isHoje = d === hoje.getDate();
+            const temEvento = (eventos[chave] && eventos[chave].length > 0) ||
+                              sessoes.some(s => s.data === chave);
+
+            html += `<span class="mini-dia ${isHoje ? 'mini-hoje' : ''}">
+                ${d}${temEvento ? '<span class="mini-ponto"></span>' : ''}
+            </span>`;
+        }
+
+        html += '</div>';
+        mini.innerHTML = html;
+    }
+
+    carregar();
+</script>
+
+{% endblock %}

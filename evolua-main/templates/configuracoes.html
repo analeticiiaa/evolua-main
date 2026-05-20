@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block titulo %}Configurações - Evolua{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{{ url_for('static', filename='css/configuracoes.css') }}">{% endblock %}
+{% block classe_main %}configuracoes-main{% endblock %}
+
+{% block conteudo %}
+
+    <div class="configuracoes-header">
+        <span>Configurações</span>
+    </div>
+
+    <div class="configuracoes-conteudo">
+
+        <!-- PERFIL -->
+        <div class="config-secao">
+            <p class="config-secao-titulo">Perfil</p>
+            <div class="config-card">
+                <div class="campo">
+                    <label>Nome</label>
+                    <input type="text" id="input-nome" placeholder="Seu nome...">
+                </div>
+                <div class="campo">
+                    <label>Email</label>
+                    <input type="email" id="input-email" placeholder="Seu email...">
+                </div>
+                <button class="btn-salvar" onclick="salvarPerfil()">Salvar alterações</button>
+            </div>
+        </div>
+
+        <!-- DADOS -->
+        <div class="config-secao">
+            <p class="config-secao-titulo">Dados</p>
+            <div class="config-card">
+
+                <div class="config-item">
+                    <div class="config-item-info">
+                        <i data-lucide="download"></i>
+                        <div>
+                            <p class="config-item-titulo">Exportar backup</p>
+                            <p class="config-item-desc">Baixe todos os seus dados em formato JSON</p>
+                        </div>
+                    </div>
+                    <button class="btn-acao" onclick="exportarBackup()">Exportar</button>
+                </div>
+
+                <div class="config-divider"></div>
+
+                <div class="config-item">
+                    <div class="config-item-info">
+                        <i data-lucide="upload"></i>
+                        <div>
+                            <p class="config-item-titulo">Importar backup</p>
+                            <p class="config-item-desc">Restaure seus dados a partir de um arquivo JSON</p>
+                        </div>
+                    </div>
+                    <label class="btn-acao" for="input-importar">Importar</label>
+                    <input type="file" id="input-importar" accept=".json" style="display:none" onchange="importarBackup(event)">
+                </div>
+
+                <div class="config-divider"></div>
+
+                <div class="config-item">
+                    <div class="config-item-info">
+                        <i data-lucide="trash-2"></i>
+                        <div>
+                            <p class="config-item-titulo">Limpar todos os dados</p>
+                            <p class="config-item-desc">Remove permanentemente todas as suas informações</p>
+                        </div>
+                    </div>
+                    <button class="btn-acao btn-perigo" onclick="abrirModalLimpar()">Limpar</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CONTA -->
+        <div class="config-secao">
+            <p class="config-secao-titulo">Conta</p>
+            <div class="config-card">
+                <div class="config-item">
+                    <div class="config-item-info">
+                        <i data-lucide="log-out"></i>
+                        <div>
+                            <p class="config-item-titulo">Encerrar sessão</p>
+                            <p class="config-item-desc">Sair da sua conta no Evolua</p>
+                        </div>
+                    </div>
+                    <button class="btn-acao btn-perigo" onclick="encerrarSessao()">Sair</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast" style="display:none"></div>
+
+    <!-- MODAL LIMPAR DADOS -->
+    <div class="modal-overlay" id="modal-limpar" style="display:none;">
+        <div class="modal">
+            <h3>⚠️ Limpar todos os dados?</h3>
+            <p class="modal-subtitulo">Esta ação é irreversível! Todas as suas tarefas, disciplinas, sessões, eventos e configurações serão apagados permanentemente.</p>
+            <div class="modal-botoes">
+                <button onclick="fecharModalLimpar()">Cancelar</button>
+                <button class="btn-confirmar btn-perigo" onclick="limparDados()">Sim, limpar tudo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // CARREGAR PERFIL DA SESSÃO
+    document.getElementById('input-nome').value = "{{ session.get('usuario', '') }}";
+    document.getElementById('input-email').value = "{{ session.get('email', '') }}";
+
+    async function exportarBackup() {
+        const resp = await fetch('/api/backup');
+        const dados = await resp.json();
+
+        const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        const hoje = new Date();
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const ano = hoje.getFullYear();
+        a.download = `evolua_backup_${ano}-${mes}-${dia}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        mostrarToast('✓ Backup exportado!');
+    }
+
+    function importarBackup(event) {
+        const arquivo = event.target.files[0];
+        if (!arquivo) return;
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const dados = JSON.parse(e.target.result);
+                const resp = await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                const resultado = await resp.json();
+                if (resultado.sucesso) {
+                    mostrarToast('✓ Backup importado com sucesso!');
+                } else {
+                    mostrarToast('✗ Erro ao importar backup!');
+                }
+            } catch {
+                mostrarToast('✗ Arquivo inválido!');
+            }
+        };
+        reader.readAsText(arquivo);
+    }
+
+    function encerrarSessao() {
+        location.href = '/api/logout';
+    }
+
+    function abrirModalLimpar() {
+        document.getElementById('modal-limpar').style.display = 'flex';
+    }
+
+    function fecharModalLimpar() {
+        document.getElementById('modal-limpar').style.display = 'none';
+    }
+
+    async function limparDados() {
+        const dadosVazios = {
+            usuarios: [],
+            disciplinas: [],
+            sessoes: [],
+            tarefas: [],
+            eventos: {}
+        };
+        await fetch('/api/backup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dadosVazios)
+        });
+        fecharModalLimpar();
+        mostrarToast('✓ Todos os dados foram apagados!');
+    }
+
+    function mostrarToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    lucide.createIcons();
+</script>
+
+{% endblock %}

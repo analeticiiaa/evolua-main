@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Evolua - Cadastro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="logo">e</div>
+
+    
+    <!--<nav class="menu">
+        <a href="#">Principal</a>
+        <a href="#">Serviços</a>
+        <a href="#">Sobre</a>
+        <a href="/">Entrar</a>
+    </nav> -->
+
+    <div class="login-container">
+        <h2>Criar conta</h2>
+
+        <form onsubmit="fazerCadastro(event)">
+    <input type="text" id="input-nome" placeholder="Nome completo">
+    <input type="email" id="input-email" placeholder="Email">
+    <input type="password" id="input-senha" placeholder="Senha">
+    <input type="password" id="input-confirmar" placeholder="Confirmar senha">
+    <button type="submit">Cadastrar</button>
+</form>
+
+<p class="register-text">
+    Já possui conta? <a href="/"><span>Entrar</span></a>
+</p>
+
+<script>
+    async function fazerCadastro(e) {
+        e.preventDefault();
+        const nome = document.getElementById('input-nome').value.trim();
+        const email = document.getElementById('input-email').value.trim();
+        const senha = document.getElementById('input-senha').value.trim();
+        const confirmar = document.getElementById('input-confirmar').value.trim();
+
+        if (!nome || !email || !senha) return;
+
+        if (senha !== confirmar) {
+            alert('As senhas não coincidem!');
+            return;
+        }
+
+        const resp = await fetch('/api/cadastrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, email, senha })
+        });
+
+        const dados = await resp.json();
+
+        if (resp.ok) {
+            alert('Conta criada com sucesso!');
+            location.href = '/';
+        } else {
+            alert(dados.erro);
+        }
+    }
+</script>
+    </div>
+
+</body>
+</html>

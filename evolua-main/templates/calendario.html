@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block titulo %}Calendário - Evolua{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{{ url_for('static', filename='css/calendario.css') }}">{% endblock %}
+{% block classe_main %}calendario-main{% endblock %}
+
+{% block conteudo %}
+
+    <div class="calendario-header">
+        <span>Calendário</span>
+    </div>
+
+    <div class="calendario-conteudo">
+
+        <!-- NAVEGAÇÃO DO MÊS -->
+        <div class="mes-nav">
+            <button onclick="mudarMes(-1)"><i data-lucide="chevron-left"></i></button>
+            <span id="mes-titulo"></span>
+            <button onclick="mudarMes(1)"><i data-lucide="chevron-right"></i></button>
+        </div>
+
+        <!-- DIAS DA SEMANA -->
+        <div class="dias-semana">
+            <span>Dom</span><span>Seg</span><span>Ter</span>
+            <span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+        </div>
+
+        <!-- GRADE DO CALENDÁRIO -->
+        <div class="grade-calendario" id="grade-calendario"></div>
+
+    </div>
+
+    <!-- MODAL DO DIA -->
+    <div class="modal-overlay" id="modal-dia" style="display:none">
+        <div class="modal modal-dia">
+            <div class="modal-dia-header">
+                <h3 id="modal-dia-titulo"></h3>
+                <button class="btn-fechar" onclick="fecharModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <!-- EVENTOS DO DIA -->
+            <div class="eventos-lista" id="eventos-lista"></div>
+
+            <!-- NOVO EVENTO -->
+            <div class="novo-evento">
+                <p class="secao-titulo">Adicionar compromisso</p>
+                <div class="campo">
+                    <input type="text" id="input-evento" placeholder="Descrição do compromisso...">
+                </div>
+                <div class="campo">
+                    <select id="input-disciplina-evento">
+                        <option value="">Sem disciplina</option>
+                    </select>
+                </div>
+                <button class="btn-adicionar-evento" onclick="adicionarEvento()">
+                    <i data-lucide="plus"></i> Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let disciplinas = [];
+    let sessoes = [];
+    let eventos = {};
+
+    let hoje = new Date();
+    let anoAtual = hoje.getFullYear();
+    let mesAtual = hoje.getMonth();
+    let diaSelecionado = null;
+
+    const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    async function carregar() {
+        const [rDisciplinas, rSessoes, rEventos] = await Promise.all([
+            fetch('/api/disciplinas'),
+            fetch('/api/sessoes'),
+            fetch('/api/eventos')
+        ]);
+        disciplinas = await rDisciplinas.json();
+        sessoes = await rSessoes.json();
+        eventos = await rEventos.json();
+        renderizarCalendario();
+    }
+
+    function mudarMes(direcao) {
+        mesAtual += direcao;
+        if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+        if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+        renderizarCalendario();
+    }
+
+    function chaveData(ano, mes, dia) {
+        return `${ano}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    }
+
+    function obterSessoesDoDia(chave) {
+        return sessoes.filter(s => s.data === chave);
+    }
+
+    function obterEventosDoDia(chave) {
+        return eventos[chave] || [];
+    }
+
+    function renderizarCalendario() {
+        document.getElementById('mes-titulo').textContent = `${meses[mesAtual]} ${anoAtual}`;
+
+        const grade = document.getElementById('grade-calendario');
+        grade.innerHTML = '';
+
+        const primeiroDia = new Date(anoAtual, mesAtual, 1).getDay();
+        const totalDias = new Date(anoAtual, mesAtual + 1, 0).getDate();
+
+        for (let i = 0; i < primeiroDia; i++) {
+            const vazio = document.createElement('div');
+            vazio.className = 'dia-celula vazio';
+            grade.appendChild(vazio);
+        }
+
+        for (let dia = 1; dia <= totalDias; dia++) {
+            const chave = chaveData(anoAtual, mesAtual, dia);
+            const sessoesHoje = obterSessoesDoDia(chave);
+            const eventosHoje = obterEventosDoDia(chave);
+            const isHoje = (dia === hoje.getDate() && mesAtual === hoje.getMonth() && anoAtual === hoje.getFullYear());
+
+            const celula = document.createElement('div');
+            celula.className = 'dia-celula' + (isHoje ? ' hoje' : '');
+            celula.onclick = () => abrirModal(dia, chave);
+
+            let html = `<span class="dia-numero">${dia}</span><div class="dia-eventos">`;
+
+            sessoesHoje.forEach(s => {
+                const disc = disciplinas.find(d => d.nome === s.disciplina);
+                const cor = disc ? disc.cor : '#093952';
+                html += `<div class="evento-tag" style="background:${cor}">
+                    ${s.disciplina} · ${s.horas > 0 ? s.horas+'h' : ''}${s.minutos > 0 ? s.minutos+'min' : ''}
+                </div>`;
+            });
+
+            eventosHoje.forEach(e => {
+                const disc = disciplinas.find(d => d.nome === e.disciplina);
+                const cor = disc ? disc.cor : '#B6D5E4';
+                html += `<div class="evento-tag compromisso" style="background:${cor}">
+                    📌 ${e.texto}
+                </div>`;
+            });
+
+            html += '</div>';
+            celula.innerHTML = html;
+            grade.appendChild(celula);
+        }
+
+        lucide.createIcons();
+    }
+
+    function abrirModal(dia, chave) {
+        diaSelecionado = chave;
+        const [ano, mes, d] = chave.split('-');
+        document.getElementById('modal-dia-titulo').textContent =
+            `${d} de ${meses[parseInt(mes)-1]} de ${ano}`;
+        popularDisciplinasSelect();
+        renderizarEventosModal(chave);
+        document.getElementById('input-evento').value = '';
+        document.getElementById('modal-dia').style.display = 'flex';
+        lucide.createIcons();
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-dia').style.display = 'none';
+        diaSelecionado = null;
+    }
+
+    function popularDisciplinasSelect() {
+        const select = document.getElementById('input-disciplina-evento');
+        select.innerHTML = '<option value="">Sem disciplina</option>';
+        disciplinas.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.nome;
+            opt.textContent = d.nome;
+            select.appendChild(opt);
+        });
+    }
+
+    function renderizarEventosModal(chave) {
+        const lista = document.getElementById('eventos-lista');
+        const sessoesHoje = obterSessoesDoDia(chave);
+        const eventosHoje = obterEventosDoDia(chave);
+        lista.innerHTML = '';
+
+        if (sessoesHoje.length === 0 && eventosHoje.length === 0) {
+            lista.innerHTML = '<p class="vazio">Nenhum evento neste dia.</p>';
+            return;
+        }
+
+        sessoesHoje.forEach(s => {
+            const disc = disciplinas.find(d => d.nome === s.disciplina);
+            const cor = disc ? disc.cor : '#093952';
+            const div = document.createElement('div');
+            div.className = 'evento-item';
+            div.innerHTML = `
+                <div class="evento-cor" style="background:${cor}"></div>
+                <div class="evento-info">
+                    <span class="evento-tipo">Sessão de estudo</span>
+                    <span class="evento-desc">${s.disciplina} · ${s.horas > 0 ? s.horas+'h' : ''}${s.minutos > 0 ? s.minutos+'min' : ''}</span>
+                </div>
+            `;
+            lista.appendChild(div);
+        });
+
+        eventosHoje.forEach((e, index) => {
+            const disc = disciplinas.find(d => d.nome === e.disciplina);
+            const cor = disc ? disc.cor : '#B6D5E4';
+            const div = document.createElement('div');
+            div.className = 'evento-item';
+            div.innerHTML = `
+                <div class="evento-cor" style="background:${cor}"></div>
+                <div class="evento-info">
+                    <span class="evento-tipo">Compromisso${e.disciplina ? ' · '+e.disciplina : ''}</span>
+                    <span class="evento-desc">${e.texto}</span>
+                </div>
+                <button class="btn-excluir-evento" onclick="excluirEvento('${chave}', ${index})">
+                    <i data-lucide="trash-2"></i>
+                </button>
+            `;
+            lista.appendChild(div);
+        });
+
+        lucide.createIcons();
+    }
+
+    async function adicionarEvento() {
+        const texto = document.getElementById('input-evento').value.trim();
+        const disciplina = document.getElementById('input-disciplina-evento').value;
+        if (!texto || !diaSelecionado) return;
+
+        await fetch('/api/eventos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: diaSelecionado, texto, disciplina })
+        });
+
+        document.getElementById('input-evento').value = '';
+        await carregar();
+        renderizarEventosModal(diaSelecionado);
+    }
+
+    async function excluirEvento(chave, index) {
+        await fetch(`/api/eventos/${chave}/${index}`, { method: 'DELETE' });
+        await carregar();
+        renderizarEventosModal(chave);
+    }
+
+    carregar();
+</script>
+
+{% endblock %}

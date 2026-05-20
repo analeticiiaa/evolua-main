@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block titulo %}Modo Foco - Evolua{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{{ url_for('static', filename='css/foco.css') }}">{% endblock %}
+{% block classe_main %}foco-main{% endblock %}
+
+{% block conteudo %}
+
+    <div class="foco-header">
+        <span>Modo Foco</span>
+    </div>
+
+    <div class="foco-conteudo">
+
+        <!-- SELEÇÃO DE MODO -->
+        <div class="foco-modos">
+            <button class="modo-btn ativo" id="btn-modo-foco" onclick="selecionarModo('foco', this)">
+                <i data-lucide="brain"></i> Foco
+            </button>
+            <button class="modo-btn" id="btn-modo-pausa" onclick="selecionarModo('pausa', this)">
+                <i data-lucide="coffee"></i> Pausa
+            </button>
+            <button class="modo-btn" id="btn-modo-personalizado" onclick="selecionarModo('personalizado', this)">
+                <i data-lucide="sliders"></i> Personalizado
+            </button>
+        </div>
+
+        <!-- PERSONALIZADO -->
+        <div class="foco-personalizado" id="tela-personalizado" style="display:none;">
+            <input type="number" id="custom-horas" min="0" max="23" placeholder="0">
+            <span>h</span>
+            <input type="number" id="custom-minutos" min="1" max="59" placeholder="25">
+            <span>min</span>
+            <button class="btn-aplicar" onclick="aplicarPersonalizado()">Aplicar</button>
+        </div>
+
+        <!-- CRONÔMETRO -->
+        <div class="foco-timer">
+            <svg class="timer-ring" viewBox="0 0 200 200">
+                <circle class="ring-fundo" cx="100" cy="100" r="88"/>
+                <circle class="ring-progresso" id="ring-progresso" cx="100" cy="100" r="88"/>
+            </svg>
+            <div class="timer-texto" id="timer-texto">25:00</div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div class="foco-controles">
+            <button class="btn-controle btn-resetar" onclick="resetarTimer()">
+                <i data-lucide="rotate-ccw"></i>
+            </button>
+            <button class="btn-controle" id="btn-iniciar" onclick="iniciarTimer()">
+                <i data-lucide="play"></i>
+            </button>
+            <button class="btn-controle btn-parar" id="btn-parar" onclick="pararTimer()" style="display:none;">
+                <i data-lucide="pause"></i>
+            </button>
+            <div style="width:42px;height:42px;"></div>
+        </div>
+
+    </div>
+
+    <!-- MODAL AO TERMINAR -->
+    <div class="modal-overlay" id="modal-salvar" style="display:none;">
+        <div class="modal">
+            <h3>Sessão concluída! 🎉</h3>
+            <p class="modal-subtitulo">Deseja salvar esta sessão de estudo?</p>
+            <div class="campo">
+                <label>Disciplina</label>
+                <select id="input-disciplina">
+                    <option value="">Não salvar em nenhuma disciplina</option>
+                </select>
+            </div>
+            <div class="modal-botoes">
+                <button onclick="descartarSessao()">Descartar</button>
+                <button class="btn-confirmar" onclick="salvarSessao()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let disciplinas = JSON.parse(localStorage.getItem('disciplinas')) || [];
+    let sessoes = JSON.parse(localStorage.getItem('sessoes')) || [];
+
+    const MODOS = {
+        foco: 25 * 60,
+        pausa: 5 * 60,
+    };
+
+    let modoAtual = 'foco';
+    let tempoTotal = MODOS.foco;
+    let tempoRestante = tempoTotal;
+    let intervalo = null;
+    let rodando = false;
+
+    const circunferencia = 2 * Math.PI * 88;
+    const ring = document.getElementById('ring-progresso');
+    ring.style.strokeDasharray = circunferencia;
+    ring.style.strokeDashoffset = 0;
+
+    function selecionarModo(modo, btn) {
+        if (rodando) return; // não muda modo enquanto está rodando
+
+        modoAtual = modo;
+
+        document.querySelectorAll('.modo-btn').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+
+        const personalizado = document.getElementById('tela-personalizado');
+        personalizado.style.display = modo === 'personalizado' ? 'flex' : 'none';
+
+        if (modo !== 'personalizado') {
+            tempoTotal = MODOS[modo];
+            tempoRestante = tempoTotal;
+            atualizarDisplay();
+            atualizarRing();
+        }
+    }
+
+    function aplicarPersonalizado() {
+        const h = parseInt(document.getElementById('custom-horas').value) || 0;
+        const m = parseInt(document.getElementById('custom-minutos').value) || 25;
+        tempoTotal = (h * 60 + m) * 60;
+        tempoRestante = tempoTotal;
+        atualizarDisplay();
+        atualizarRing();
+    }
+
+    function formatarTempo(segundos) {
+        const h = Math.floor(segundos / 3600);
+        const m = Math.floor((segundos % 3600) / 60);
+        const s = segundos % 60;
+        if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function atualizarDisplay() {
+        document.getElementById('timer-texto').textContent = formatarTempo(tempoRestante);
+    }
+
+    function atualizarRing() {
+        const progresso = tempoRestante / tempoTotal;
+        ring.style.strokeDashoffset = circunferencia * (1 - progresso);
+    }
+
+    function iniciarTimer() {
+        if (modoAtual === 'personalizado' && tempoRestante === tempoTotal) {
+            aplicarPersonalizado();
+        }
+
+        rodando = true;
+        document.getElementById('btn-iniciar').style.display = 'none';
+        document.getElementById('btn-parar').style.display = 'flex';
+
+        intervalo = setInterval(() => {
+            tempoRestante--;
+            atualizarDisplay();
+            atualizarRing();
+
+            if (tempoRestante <= 0) {
+                clearInterval(intervalo);
+                rodando = false;
+                aoTerminar();
+            }
+        }, 1000);
+    }
+
+    function pararTimer() {
+        clearInterval(intervalo);
+        rodando = false;
+        document.getElementById('btn-iniciar').style.display = 'flex';
+        document.getElementById('btn-parar').style.display = 'none';
+    }
+
+    function resetarTimer() {
+        pararTimer();
+        if (modoAtual === 'personalizado') {
+            aplicarPersonalizado();
+        } else {
+            tempoTotal = MODOS[modoAtual];
+            tempoRestante = tempoTotal;
+        }
+        atualizarDisplay();
+        atualizarRing();
+    }
+
+    async function aoTerminar() {
+    await popularDisciplinas();
+    document.getElementById('modal-salvar').style.display = 'flex';
+    }
+
+    async function popularDisciplinas() {
+    const resp = await fetch('/api/disciplinas');
+    const disciplinas = await resp.json();
+    const select = document.getElementById('input-disciplina');
+    select.innerHTML = '<option value="">Não salvar em nenhuma disciplina</option>';
+    disciplinas.forEach(d => {
+        const option = document.createElement('option');
+        option.value = d.nome;
+        option.textContent = d.nome;
+        select.appendChild(option);
+      });
+    } 
+
+    async function salvarSessao() {
+    const disciplina = document.getElementById('input-disciplina').value;
+
+    if (disciplina) {
+        const horas = Math.floor(tempoTotal / 3600);
+        const minutos = Math.floor((tempoTotal % 3600) / 60);
+
+        const hoje = new Date();
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const ano = hoje.getFullYear();
+        const dataHoje = `${ano}-${mes}-${dia}`;
+
+        await fetch('/api/sessoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                disciplina,
+                data: dataHoje,
+                horas,
+                minutos,
+                foco: true
+            })
+        });
+    }
+
+    fecharModal();
+    resetarTimer();
+    }
+
+    function descartarSessao() {
+        fecharModal();
+        resetarTimer();
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-salvar').style.display = 'none';
+    }
+
+    atualizarDisplay();
+</script>
+
+
+
+
+{% endblock %}

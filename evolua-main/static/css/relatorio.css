@@ -1,0 +1,157 @@
+.relatorio-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.relatorio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 40px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+/* FILTROS */
+.filtros {
+    display: flex;
+    gap: 8px;
+}
+
+.filtro-btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 20px;
+    background: white;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.filtro-btn:hover {
+    background: #B6D5E4;
+    font-weight: 700;
+}
+
+.filtro-btn.ativo {
+    background: #093952;
+    color: white;
+    font-weight: 700;
+}
+
+/* CONTEÚDO */
+.relatorio-conteudo {
+    flex: 1;
+    padding: 0 40px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* CARD TOTAL */
+.card-total {
+    background: #093952;
+    border-radius: 12px;
+    padding: 20px 24px;
+    color: white;
+}
+
+.card-total-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.card-total-info i {
+    width: 32px;
+    height: 32px;
+}
+
+.card-label {
+    margin: 0;
+    font-size: 13px;
+    font-family: 'League Spartan', sans-serif;
+    opacity: 0.8;
+}
+
+.card-valor {
+    margin: 4px 0 0;
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'League Spartan', sans-serif;
+}
+
+/* GRÁFICO */
+.relatorio-grafico {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+
+.secao-titulo {
+    margin: 0 0 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.grafico-wrapper {
+    height: 220px;
+    position: relative;
+}
+
+/* TABELA */
+.relatorio-tabela-wrapper {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+
+.relatorio-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.relatorio-tabela thead tr {
+    background: #093952;
+    color: white;
+}
+
+.relatorio-tabela th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.relatorio-tabela th:first-child { border-radius: 8px 0 0 8px; }
+.relatorio-tabela th:last-child { border-radius: 0 8px 8px 0; }
+
+.relatorio-tabela tbody tr {
+    border-bottom: 4px solid #B6D5E4;
+}
+
+.relatorio-tabela tbody tr:last-child {
+    border-bottom: none;
+}
+
+.relatorio-tabela td {
+    padding: 12px 16px;
+    color: #093952;
+    font-size: 14px;
+}
+
+.vazio {
+    color: #bbb;
+    font-style: italic;
+    font-size: 13px;
+}

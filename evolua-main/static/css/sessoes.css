@@ -1,0 +1,211 @@
+.sessoes-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sessoes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 40px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.btn-nova-sessao {
+    background: #093952;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.btn-nova-sessao:hover {
+    background: #B6D5E4;
+    color: #093952;
+}
+
+.btn-nova-sessao i {
+    width: 22px;
+    height: 22px;
+}
+
+.sessoes-conteudo {
+    flex: 1;
+    padding: 0 40px 24px;
+    overflow-y: auto;
+}
+
+/* TABELA */
+.sessoes-tabela {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.sessoes-tabela thead tr {
+    background: #093952;
+    color: white;
+}
+
+.sessoes-tabela th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.sessoes-tabela th:first-child { border-radius: 10px 0 0 10px; }
+.sessoes-tabela th:last-child { border-radius: 0 10px 10px 0; }
+
+.sessoes-tabela tbody tr {
+    background: white;
+    border-bottom: 6px solid #B6D5E4;
+    transition: 0.2s;
+}
+
+.sessoes-tabela tbody tr:hover {
+    background: #f0f6fa;
+}
+
+.sessoes-tabela td {
+    padding: 14px 16px;
+    color: #093952;
+    font-size: 14px;
+}
+
+.sessoes-tabela td:first-child { border-radius: 10px 0 0 10px; }
+.sessoes-tabela td:last-child { border-radius: 0 10px 10px 0; }
+
+.btn-excluir-sessao {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    transition: 0.2s;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.btn-excluir-sessao:hover { color: #e74c3c; }
+.btn-excluir-sessao i { width: 15px; height: 15px; }
+
+.vazio {
+    color: #bbb;
+    font-style: italic;
+    font-size: 13px;
+    margin-top: 20px;
+}
+
+/* MODAL */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal {
+    background: white;
+    padding: 30px;
+    border-radius: 14px;
+    width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+}
+
+.modal h3 {
+    margin: 0;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 18px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.campo label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+}
+
+.campo select,
+.campo input[type="date"] {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 14px;
+    outline: none;
+    color: #093952;
+}
+
+.campo select:focus,
+.campo input:focus { border-color: #093952; }
+
+.duracao-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.duracao-inputs input {
+    width: 60px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 14px;
+    outline: none;
+    color: #093952;
+    text-align: center;
+}
+
+.duracao-inputs input:focus { border-color: #093952; }
+
+.duracao-inputs span {
+    color: #093952;
+    font-family: 'League Spartan', sans-serif;
+    font-weight: 700;
+}
+
+.modal-botoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-botoes button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'League Spartan', sans-serif;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.btn-confirmar { background: #093952; color: white; }
+.btn-confirmar:hover { background: #B6D5E4; color: #093952; }

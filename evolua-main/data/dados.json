@@ -1,0 +1,41 @@
+{
+    "usuarios": [
+        {
+            "nome": "emily",
+            "email": "vithstna2@gmail.com",
+            "senha": "scrypt:32768:8:1$MjezDd9s8K4Cnx8k$4b585c377d1e77ac8df7001dc98b785540290eeb47273e7ea217d1022d56bc20fa29d7277d9453ac27a0243f0b3b386c2b64fa97da5e402fed7057c11cd97c6b"
+        }
+    ],
+    "disciplinas": [
+        {
+            "nome": "c1",
+            "cor": "#E07A5F",
+            "criado_em": "2026-04-29"
+        }
+    ],
+    "sessoes": [
+        {
+            "nome": "Sessão",
+            "disciplina": "c1",
+            "horas": 1,
+            "minutos": 0,
+            "data": "2026-04-29"
+        }
+    ],
+    "tarefas": [
+        {
+            "nome": "lkdjflksd",
+            "concluida": false,
+            "criado_em": "2026-04-29"
+        }
+    ],
+    "eventos": {
+        "2026-04-29": [
+            {
+                "texto": "jkklfja",
+                "data": "2026-04-29",
+                "disciplina": ""
+            }
+        ]
+    }
+}

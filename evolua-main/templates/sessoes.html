@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block titulo %}Sessões - Evolua{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{{ url_for('static', filename='css/sessoes.css') }}">{% endblock %}
+{% block classe_main %}sessoes-main{% endblock %}
+
+{% block conteudo %}
+
+    <!-- HEADER -->
+    <div class="sessoes-header">
+        <span>Sessões</span>
+        <button class="btn-nova-sessao" onclick="abrirModal()">
+            <i data-lucide="plus"></i>
+        </button>
+    </div>
+
+    <!-- TABELA -->
+    <div class="sessoes-conteudo">
+        <table class="sessoes-tabela">
+            <thead>
+                <tr>
+                    <th>Disciplina</th>
+                    <th>Data</th>
+                    <th>Duração</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="sessoes-lista"></tbody>
+        </table>
+        <p class="vazio" id="vazio" style="display:none;">Nenhuma sessão registrada.</p>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal" style="display:none">
+        <div class="modal">
+            <h3>Nova sessão</h3>
+
+            <div class="campo">
+                <label>Disciplina</label>
+                <select id="input-disciplina">
+                    <option value="">Selecione uma disciplina...</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label>Data</label>
+                <input type="date" id="input-data">
+            </div>
+
+            <div class="campo">
+                <label>Duração</label>
+                <div class="duracao-inputs">
+                    <input type="number" id="input-horas" min="0" max="23" placeholder="0" title="Horas">
+                    <span>h</span>
+                    <input type="number" id="input-minutos" min="0" max="59" placeholder="0" title="Minutos">
+                    <span>min</span>
+                </div>
+            </div>
+
+            <div class="modal-botoes">
+                <button onclick="fecharModal()">Cancelar</button>
+                <button class="btn-confirmar" onclick="salvarSessao()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let sessoes = [];
+    let disciplinas = [];
+
+    async function carregar() {
+        const [rSessoes, rDisciplinas] = await Promise.all([
+            fetch('/api/sessoes'),
+            fetch('/api/disciplinas')
+        ]);
+        sessoes = await rSessoes.json();
+        disciplinas = await rDisciplinas.json();
+        renderizar();
+    }
+
+    function formatarDuracao(horas, minutos) {
+        if (horas > 0 && minutos > 0) return `${horas}h ${minutos}min`;
+        if (horas > 0) return `${horas}h`;
+        return `${minutos}min`;
+    }
+
+    function formatarData(dataStr) {
+        const [ano, mes, dia] = dataStr.split('-');
+        return `${dia}/${mes}/${ano}`;
+    }
+
+    function renderizar() {
+        const lista = document.getElementById('sessoes-lista');
+        const vazio = document.getElementById('vazio');
+        lista.innerHTML = '';
+
+        if (sessoes.length === 0) {
+            vazio.style.display = 'block';
+            return;
+        }
+
+        vazio.style.display = 'none';
+
+        sessoes.forEach((sessao, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${sessao.disciplina}</td>
+                <td>${formatarData(sessao.data)}</td>
+                <td>${formatarDuracao(sessao.horas, sessao.minutos)}</td>
+                <td>
+                    <button class="btn-excluir-sessao" onclick="excluirSessao(${index})">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </td>
+            `;
+            lista.appendChild(tr);
+        });
+
+        lucide.createIcons();
+    }
+
+    function popularDisciplinas() {
+        const select = document.getElementById('input-disciplina');
+        select.innerHTML = '<option value="">Selecione uma disciplina...</option>';
+        disciplinas.forEach(d => {
+            const option = document.createElement('option');
+            option.value = d.nome;
+            option.textContent = d.nome;
+            select.appendChild(option);
+        });
+    }
+
+    function abrirModal() {
+        popularDisciplinas();
+        const hoje = new Date();
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const ano = hoje.getFullYear();
+        document.getElementById('input-data').value = `${ano}-${mes}-${dia}`;
+        document.getElementById('input-horas').value = '';
+        document.getElementById('input-minutos').value = '';
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function fecharModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    async function salvarSessao() {
+        const disciplina = document.getElementById('input-disciplina').value;
+        const data = document.getElementById('input-data').value;
+        const horas = parseInt(document.getElementById('input-horas').value) || 0;
+        const minutos = parseInt(document.getElementById('input-minutos').value) || 0;
+
+        if (!disciplina || !data || (horas === 0 && minutos === 0)) return;
+
+        await fetch('/api/sessoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ disciplina, data, horas, minutos })
+        });
+
+        fecharModal();
+        carregar();
+    }
+
+    async function excluirSessao(index) {
+        await fetch(`/api/sessoes/${index}`, { method: 'DELETE' });
+        carregar();
+    }
+
+    carregar();
+</script>
+{% endblock %}

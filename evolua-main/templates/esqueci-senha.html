@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Evolua - Esqueci minha senha</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="logo">e</div>
+
+    <!--<nav class="menu">
+        <a href="#">Principal</a>
+        <a href="#">Serviços</a>
+        <a href="#">Sobre</a>
+        <a href="/">Entrar</a>
+    </nav> -->
+
+    <div class="login-container">
+        <h2>Redefinir senha</h2>
+        <p class="esqueci-desc">Digite seu email cadastrado e enviaremos um link para redefinir sua senha.</p>
+
+        <div id="tela-email">
+            <form onsubmit="enviarEmail(event)">
+                <input type="email" id="input-email" placeholder="Seu email...">
+                <button type="submit">Enviar link</button>
+            </form>
+        </div>
+
+        <div id="tela-confirmacao" style="display:none;">
+            <p class="confirmacao-texto">✉️ Email enviado! Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.</p>
+        </div>
+
+        <p class="register-text" style="margin-top: 20px;">
+            Lembrou a senha? <a href="/"><span>Entrar</span></a>
+        </p>
+    </div>
+
+    <script>
+    async function enviarEmail(e) {
+        e.preventDefault();
+        const email = document.getElementById('input-email').value.trim();
+        if (!email) return;
+
+        document.getElementById('tela-email').style.display = 'none';
+        document.getElementById('tela-confirmacao').style.display = 'block';
+
+        fetch('/api/esqueci-senha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+    }
+</script>
+py
+</body>
+</html>
